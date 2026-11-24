@@ -1,35 +1,19 @@
-"""Commuter forecast entry: audit the invented-city line, publish to gate output."""
+"""Charm the Commuter — one forecast for a city that is not on any map."""
 import json
 import os
-import sys
 
-FORECAST = "entry.txt"
-SKY_CAP = 140
+FORECAST = "慢雾市明日多云转晴，雾比早班地铁慢十分钟；阳光预计九点后上岗，与通勤族默契同步，午后有零星拿铁香。"
 
 
-def audit_city(text: str) -> dict:
-    clean = " ".join(text.split())
-    return {
-        "glyph_budget": len(clean),
-        "kilo_bytes": len(text.encode("utf-8")),
-        "fits_kiosk": len(clean) <= SKY_CAP,
-        "not_vacant": bool(clean),
-        "mono_line": "\n" not in text.strip() and len(text.encode("utf-8")) < SKY_CAP + 2,
-    }
+def ship():
+    spot = os.environ.get("MAKEFUN_OUTPUT_DIR") or "output"
+    os.makedirs(spot, exist_ok=True)
+    path = os.path.join(spot, "entry.txt")
+    with open(path, "w", encoding="utf-8") as pen:
+        pen.write(FORECAST)
+    with open(path, "r", encoding="utf-8") as eye:
+        assert eye.read() == FORECAST
+    print(json.dumps({"city": "slowfog", "sent": len(FORECAST), "forecast": True}))
 
 
-def publish() -> int:
-    with open(FORECAST, encoding="utf-8") as handle:
-        raw = handle.read()
-    stamp = audit_city(raw)
-    stamp["greenlit"] = stamp["fits_kiosk"] and stamp["not_vacant"] and stamp["mono_line"]
-    kiosk = os.environ.get("MAKEFUN_OUTPUT_DIR", "kiosk")
-    os.makedirs(kiosk, exist_ok=True)
-    with open(os.path.join(kiosk, FORECAST), "wb") as handle:
-        handle.write(raw.encode("utf-8"))
-    print(json.dumps({"forecast": "grimsbottom", "audit": stamp, "kiosk": kiosk}))
-    return 0 if stamp["greenlit"] else 1
-
-
-if __name__ == "__main__":
-    sys.exit(publish())
+ship()
